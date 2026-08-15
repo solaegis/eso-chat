@@ -16,9 +16,13 @@ function EC.EnsureCharacterData()
     if not EC.db.perCharacterData[characterId] then
         EC.db.perCharacterData[characterId] = {
             _initialized = true,
+            notesText = "",
         }
     end
 
     EC.charData = EC.db.perCharacterData[characterId]
+    if EC.charData.notesText == nil then
+        EC.charData.notesText = ""
+    end
     return EC.charData
 end

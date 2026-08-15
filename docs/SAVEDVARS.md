@@ -31,12 +31,6 @@ EC.charData = EC.db.perCharacterData[characterId]
 
 Do **not** put `perCharacterData` in Defaults as something that reset should wipe. `EC.ResetSettings` preserves that table.
 
-## Schema migration (optional advanced)
+## Schema
 
-When you bump settings shape:
-
-1. Increase `EC.SV_VERSION` / a `settingsSchemaVersion` field.
-2. Migrate from the **previous** version only via sequential steps (`N-1 → N`).
-3. Greenfield installs already have current defaults — skip migration.
-
-Document product-specific steps in your addon; this template ships greenfield `SV_VERSION = 1` only.
+`EC.SCHEMA_VERSION` / `settingsSchemaVersion` is **1**. New default keys are filled on load by `EC.EnsureDefaultsFilled` (non-destructive). There is no sequential migration ladder.

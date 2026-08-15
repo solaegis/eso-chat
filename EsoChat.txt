@@ -4,15 +4,40 @@
 ## AddOnVersion: @addon-build-version@
 ## APIVersion: 101051 101050
 ## SavedVariables: EsoChatSettings
-## OptionalDependsOn: LibAddonMenu-2.0 LibDebugLogger
-## Description: solaegis ESO addon scaffold. Use /ech help. Rename with scripts/rename-addon.sh before shipping.
+## OptionalDependsOn: LibAddonMenu-2.0 LibDebugLogger LibChatMessage LibMediaProvider-1.0 pChat rChat
+## Description: Chat enhancement for ESO PC: display formatting, mentions, history, tabs, filtering, and more. Use /ech help.
 ##
 ## This Add-On is not created by, affiliated with or sponsored by ZeniMax Media Inc. or any other company.
 ## The Elder Scrolls(R) Online(TM) and related logos are registered trademarks or trademarks of ZeniMax Media Inc. in the United States and/or other countries. All rights reserved.
 
 src/Core.lua
+src/i18n/en.lua
+src/i18n/de.lua
+src/i18n/fr.lua
 src/settings/Defaults.lua
 src/settings/Initializer.lua
+src/chat/Display.lua
+src/chat/Mentions.lua
+src/chat/Notifications.lua
+src/chat/Sounds.lua
+src/chat/Filtering.lua
+src/chat/History.lua
+src/chat/Formatter.lua
+src/chat/Compat.lua
+src/chat/AgentDebug.lua
+src/chat/ContainerLayout.lua
+src/chat/Tabs.lua
+src/chat/TabUnread.lua
+src/chat/TabProfiles.lua
+src/chat/TabFilters.lua
+src/chat/Notes.lua
+src/chat/TabCreate.lua
+src/chat/CopyPaste.lua
+src/chat/SettingsIO.lua
+src/chat/InputEnhance.lua
+src/chat/Automation.lua
+src/chat/LootEmoji.lua
+src/chat/ChatModules.lua
 src/Commands.lua
 src/settings/SupportFooter.lua
 src/settings/Panel.lua

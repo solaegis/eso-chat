@@ -4,67 +4,68 @@
 [![ESO API](https://img.shields.io/badge/ESO_API-101051-blue)](https://github.com/solaegis/eso-chat)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-Runnable solaegis scaffold for Elder Scrolls Online **PC** addons: Taskfile tooling, ESOUI-compliant packaging, GitHub Actions release + ESOUI upload, LibAddonMenu settings with Buy Me a Coffee / in-game gold support, and a one-shot **rename** script to brand a new addon.
+Chat enhancement addon for Elder Scrolls Online **PC** (keyboard chat): display formatting, mentions, whisper alerts, history, tab management, filtering, copy/export, input helpers, and optional automation.
 
-## Create a new addon
-
-```bash
-# After cloning this template into your new repo:
-./scripts/rename-addon.sh \
-  --name EsoChat \
-  --title "ESO Chat" \
-  --alias EC \
-  --slash ech \
-  --repo solaegis/eso-chat \
-  --esoui-id 0
-```
-
-Use `--dry-run` to preview. Details: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
-
-## Quick start (template stub)
+## Quick start
 
 ```bash
-task init          # deps hints + optional pre-commit
-task install:live  # copy into ESO Live AddOns with version injection
+task install:live
 # In-game: /reloadui then /ech help
 ```
 
-## Commands (stub)
+## Commands
 
 | Command | Action |
 |---------|--------|
 | `/ech` | Status |
 | `/ech help` | Help |
-| `/ech settings` | Open LibAddonMenu panel |
-| `/ech debug` | Toggle debug |
-| `/ech reset` | Reset settings |
+| `/ech settings` | Open LibAddonMenu |
+| `/ech history [n]` | Show history |
+| `/ech mentions` | List mention keywords |
+| `/ech create …` | Create tabs (typed; see `/ech create help`) |
+| `/ech notes [clear]` | Open Notes notepad, or clear active scope |
+| `/ech tab …` | Tab list/create/rename/focus |
+| `/ech profile …` | Tab category profiles |
+| `/ech copy [n]` | Copy history lines |
+| `/ech export` | Export settings |
+| `/ech filter` | Filter status |
 
-Alias: `/esochat`. LAM also registers `/echsettings`.
+Alias: `/esochat`. LAM: `/echsettings`.
+
+## Features
+
+- Name modes (character / account / both), nicknames, timestamps, strip colors/says/zone tags
+- Mentions with highlight + sound (optional Lua patterns)
+- Whisper / party notifications and tab flash/switch
+- Account-wide chat history with retention limits
+- Tab create/rename, per-tab categories, layout restore, profiles
+- Spam presets + keyword/flood filter
+- Clipboard copy and settings export/import
+- Input character counter and send history
+- Optional automation (default off)
+
+See [docs/CREDITS.md](docs/CREDITS.md) for prior-art acknowledgements.
 
 ## Tooling
 
 | Task | Description |
 |------|-------------|
-| `task test` | Lint + validate |
+| `task test` | Unit tests + lint + validate |
+| `task test:unit` | Unit tests only |
 | `task build` | Release ZIP |
-| `task build:fast` | ZIP without full test gate |
 | `task install:live` | Install to Live (preferred on Mac) |
-| `task rename -- …` | Rebrand template tokens |
 
 ## Docs
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Tabs](docs/TABS.md)
+- [Filtering](docs/FILTERING.md)
+- [Compatibility](docs/COMPAT.md)
+- [Credits](docs/CREDITS.md)
 - [Development](docs/DEVELOPMENT.md)
 - [Publishing](docs/PUBLISHING.md)
-- [ESOUI best practices](docs/esoui-addon-best-practices.md)
-- [Lua patterns](docs/LUA_PATTERNS.md)
-- [SavedVariables](docs/SAVEDVARS.md)
 
 ## Support
 
 - [Buy Me a Coffee](https://www.buymeacoffee.com/lewisvavasw)
-- In-game gold mail to `@solaegis` (from the settings Support footer)
-
-## License
-
-MIT — see [LICENSE](LICENSE).
+- In-game gold: mail `@solaegis`

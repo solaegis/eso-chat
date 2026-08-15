@@ -1,41 +1,45 @@
 # Architecture
 
-Minimal load order for the solaegis ESO addon scaffold.
+EsoChat enhances Elder Scrolls Online **keyboard** chat: display formatting, mentions, notifications, history, tabs, filtering, copy/export, and optional automation.
 
 ## Manifest load order
 
-1. `src/Core.lua` — namespace, SafeCall, logging, branding constants
-2. `src/settings/Defaults.lua` — SavedVariables defaults + reset
-3. `src/settings/Initializer.lua` — per-character bucket helpers
-4. `src/Commands.lua` — slash commands
-5. `src/settings/SupportFooter.lua` — Buy Me a Coffee + in-game gold
-6. `src/settings/Panel.lua` — LibAddonMenu panel
-7. `src/Init.lua` — `EVENT_ADD_ON_LOADED`, server-scoped SavedVars (must be last)
+1. `src/Core.lua` — namespace, SafeCall, logging
+2. `src/i18n/{en,de,fr}.lua` — `EC.L` strings
+3. `src/settings/Defaults.lua` / `Initializer.lua`
+4. `src/chat/*` — feature modules (Display → … → ChatModules)
+5. `src/Commands.lua`
+6. `src/settings/SupportFooter.lua` / `Panel.lua`
+7. `src/Init.lua` — SavedVars, EnsureDefaultsFilled, start modules (must be last)
 
 ## Runtime flow
 
 ```mermaid
 flowchart TD
-  load[EVENT_ADD_ON_LOADED] --> sv[ZO_SavedVars NewAccountWide GetWorldName]
-  sv --> char[EnsureCharacterData]
-  char --> cmd[RegisterCommands]
-  cmd --> lam[RegisterSettingsPanel]
-  lam --> ready[Info loaded message]
+  load[EVENT_ADD_ON_LOADED] --> sv[ZO_SavedVars GetWorldName]
+  sv --> fill[EnsureDefaultsFilled]
+  fill --> start[ChatModules.Start]
+  start --> hist[History event]
+  activated[EVENT_PLAYER_ACTIVATED] --> compat[Compat]
+  compat --> fmt[Formatter.Install]
+  activated --> tabs[Tabs.Restore]
+  activated --> input[InputEnhance]
+  event[EVENT_CHAT_MESSAGE_CHANNEL] --> filter[Filtering]
+  filter --> history[History.Capture]
+  filter --> notify[Notifications]
+  fmt --> display[Display]
+  display --> mentions[Mentions]
 ```
 
 ## Namespace
 
-| Token | Template default | Meaning |
-|-------|------------------|---------|
-| Global | `EsoChat` | ESO folder / manifest basename |
-| Alias | `EC` | Short Lua alias |
-| SavedVariables | `EsoChatSettings` | Account-wide SV table name |
-| Slash | `/ech` | Primary command |
+| Token | Value |
+|-------|--------|
+| Global | `EsoChat` |
+| Alias | `EC` |
+| SavedVariables | `EsoChatSettings` |
+| Slash | `/ech` |
 
-Run `scripts/rename-addon.sh` before shipping so these match your product.
+## Schema
 
-## Adding modules
-
-- Place new Lua under `src/` (or `src/<area>/`)
-- Append paths to `EsoChat.txt` **before** `src/Init.lua`
-- Keep Init thin: register events and wire modules; put logic in named modules
+`settingsSchemaVersion` is **1** (greenfield). Missing keys are filled non-destructively via `EC.EnsureDefaultsFilled` — there is no migration ladder.

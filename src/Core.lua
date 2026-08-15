@@ -15,11 +15,14 @@ EC.DONATION_ACCOUNT = "@solaegis"
 EC.DONATION_GOLD_DEFAULT = 5000
 
 EC.SV_NAME = "EsoChatSettings"
-EC.SV_VERSION = 1
+EC.SV_VERSION = 2
 
 EC.db = nil
 EC.defaults = nil
 EC.debug = false
+
+-- Filled by src/i18n/en.lua (and optional language packs)
+EC.i18n = EC.i18n or {}
 
 ------------------------------------------------------------
 -- Optional LibDebugLogger

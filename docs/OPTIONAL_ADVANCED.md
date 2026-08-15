@@ -17,9 +17,10 @@ Not required for a new solaegis addon. Add when the product needs them.
 - `scripts/build-compliance-fixtures.sh` + negative ZIP traps in CI
 - Useful once packaging regressions appear
 
-## Schema migration ladder
+## Schema versioning
 
-- `MigrateSavedVars` with sequential version steps (eso-combat-lock `CharacterDb.lua`)
+- Stamp `settingsSchemaVersion = 1` in defaults. Prefer `EnsureDefaultsFilled` for new keys.
+- If a product later needs a migration ladder, follow eso-combat-lock `CharacterDb.lua` — EsoChat does not ship one.
 
 ## Extra libraries
 

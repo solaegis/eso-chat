@@ -209,8 +209,29 @@ tasks:
     silent: true
 
   test:
-    desc: Run all tests (lint + validate)
+    desc: Run unit tests, lint, and validate
     deps: [lint, validate:all]
     cmds:
+      - |
+        echo "Running unit tests..."
+        if command -v luajit >/dev/null 2>&1; then
+          luajit tests/run.lua
+        elif command -v lua >/dev/null 2>&1; then
+          lua tests/run.lua
+        else
+          echo "lua/luajit not found"
+          exit 1
+        fi
       - echo "All tests passed"
+    silent: true
+
+  test:unit:
+    desc: Run Lua unit tests only
+    cmds:
+      - |
+        if command -v luajit >/dev/null 2>&1; then
+          luajit tests/run.lua
+        else
+          lua tests/run.lua
+        fi
     silent: true

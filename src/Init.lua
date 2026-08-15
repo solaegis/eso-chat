@@ -21,6 +21,10 @@ local function onAddOnLoaded(_, name)
     EC.db = ZO_SavedVars:NewAccountWide(EC.SV_NAME, EC.SV_VERSION, GetWorldName(), defaults)
     EC.debug = EC.db.debug == true
 
+    if EC.EnsureDefaultsFilled then
+        EC.EnsureDefaultsFilled()
+    end
+
     if EC.EnsureCharacterData then
         EC.EnsureCharacterData()
     end
@@ -28,7 +32,11 @@ local function onAddOnLoaded(_, name)
     EC.RegisterCommands()
     EC.RegisterSettingsPanel()
 
-    EC.Info(string.format("%s v%s loaded — /ech help", EC.DISPLAY_NAME, EC.VERSION))
+    if EC.ChatModules and EC.ChatModules.Start then
+        EC.ChatModules.Start()
+    end
+
+    EC.Info(EC.L("loaded", EC.DISPLAY_NAME, EC.VERSION))
 end
 
 EVENT_MANAGER:RegisterForEvent(ADDON_NAME, EVENT_ADD_ON_LOADED, onAddOnLoaded)

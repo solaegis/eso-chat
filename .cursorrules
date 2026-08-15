@@ -35,7 +35,13 @@ Always test in ESO's Lua 5.1 environment.
 
 - After ANY addon code change: run `task install:live`, then `/reloadui` in-game
 - Prefer `install:live` over symlink on Mac
-- New product repo: run `scripts/rename-addon.sh` before shipping
+- Register chat formatters on `EVENT_PLAYER_ACTIVATED` and chain prior formatters
+- Primary slash is `/ech` (not `/cm`)
+
+## Chat modules
+
+- Feature code lives under `src/chat/`; wire via `EC.ChatModules.Start()`
+- Keyboard chat first; soft-disable formatter/tabs on gamepad chat
 
 ## Versioning
 
