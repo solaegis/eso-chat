@@ -1,0 +1,82 @@
+version: "3"
+
+tasks:
+  check:
+    desc: Run comprehensive pre-release validation
+    cmds:
+      - |
+        chmod +x scripts/pre-release-check.sh
+        ./scripts/pre-release-check.sh
+    silent: true
+
+  checklist:
+    desc: Display release checklist summary
+    cmds:
+      - |
+        echo "EsoChat — Release Checklist"
+        echo "========================================="
+        echo ""
+        echo "1. CODE QUALITY"
+        echo "   task release:check    - Run all checks"
+        echo "   task test             - Lint + validate"
+        echo ""
+        echo "2. IN-GAME"
+        echo "   task install:live, then /reloadui"
+        echo "   /ech help, /ech settings"
+        echo ""
+        echo "3. BUILD"
+        echo "   task build            - Build release ZIP"
+        echo ""
+        echo "4. RELEASE"
+        echo "   Update CHANGELOG.md, commit, tag vX.Y.Z, push --tags"
+        echo ""
+        echo "See RELEASE_CHECKLIST.md and docs/PUBLISHING.md"
+    silent: true
+
+  prepare:
+    desc: Prepare for release (validate and show next steps)
+    cmds:
+      - echo "Preparing release..."
+      - task dev:test
+      - |
+        echo ""
+        echo "Next steps:"
+        echo "  1. Update CHANGELOG.md"
+        echo "  2. In-game verification (docs/DEVELOPMENT.md)"
+        echo "  3. git commit && git tag vX.Y.Z && git push origin main --tags"
+    silent: true
+
+  version:show:
+    desc: Show current version info
+    cmds:
+      - |
+        echo "{{.ADDON_NAME}}"
+        if git rev-parse --git-dir >/dev/null 2>&1; then
+          if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
+            VERSION=$(git describe --tags --exact-match HEAD | sed 's/^v//')
+            echo "   Version (tag): ${VERSION}"
+          else
+            VERSION=$(git rev-parse --short HEAD)
+            echo "   Version (commit): ${VERSION}"
+          fi
+        else
+          echo "   Version (placeholder): @project-version@"
+        fi
+        if grep -q "^## APIVersion:" {{.MANIFEST_FILE}}; then
+          API_VERSION=$(grep "^## APIVersion:" {{.MANIFEST_FILE}} | awk '{print $3}')
+          echo "   API Version: ${API_VERSION}"
+        fi
+    silent: true
+
+  version:api:
+    desc: "Update ESO API version — Usage: task release:version:api -- <VERSION>"
+    cmds:
+      - |
+        if [ -z "{{.CLI_ARGS}}" ]; then
+          echo "API version required"
+          echo "Usage: task release:version:api -- <VERSION>"
+          exit 1
+        fi
+        chmod +x scripts/update-api-version.sh
+        ./scripts/update-api-version.sh {{.CLI_ARGS}}
+    silent: true

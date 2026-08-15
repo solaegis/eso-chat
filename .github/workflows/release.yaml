@@ -1,0 +1,129 @@
+name: Release EsoChat
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  ADDON_NAME: EsoChat
+  ESOUI_ADDON_ID: "0"
+  ESO_API_VERSION: "12.0.0"
+  LUA_VERSION: "5.1"
+  BUILD_DIR: "/tmp/EsoChat"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Generate addon name and ZIP name
+        id: addon_name
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          API_VERSION=$(grep "^## APIVersion:" ${{ env.ADDON_NAME }}.txt | awk '{print $3}')
+          if [ "$API_VERSION" -ge 101051 ]; then
+            CLIENT_RELEASE="Update 51"
+          elif [ "$API_VERSION" -ge 101050 ]; then
+            CLIENT_RELEASE="Update 50"
+          else
+            CLIENT_RELEASE="API-$API_VERSION"
+          fi
+          FULL_ADDON_NAME="${{ env.ADDON_NAME }} - Updated for $CLIENT_RELEASE"
+          echo "ADDON_NAME=$FULL_ADDON_NAME" >> $GITHUB_OUTPUT
+          echo "ZIP_NAME=$FULL_ADDON_NAME-${VERSION}.zip" >> $GITHUB_OUTPUT
+
+      - uses: leafo/gh-actions-lua@v13
+        with:
+          luaVersion: "luajit-openresty"
+
+      - uses: leafo/gh-actions-luarocks@v6
+
+      - name: Install Luacheck
+        run: luarocks install luacheck
+
+      - name: Run Luacheck
+        run: luacheck src --config .luacheckrc
+
+      - name: Validate manifest
+        run: lua scripts/validate-manifest.lua ${{ env.ADDON_NAME }}.txt
+
+      - name: Replace version placeholders
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          DATE_VERSION=$(date +'%Y%m%d')
+          chmod +x scripts/replace-version.sh
+          ./scripts/replace-version.sh . "$VERSION"
+          sed -i "s/^## AddOnVersion: .*/## AddOnVersion: $DATE_VERSION/g" ${{ env.ADDON_NAME }}.txt
+
+      - name: Build release ZIP
+        run: |
+          chmod +x scripts/pre-build-check.sh scripts/build-copy.sh scripts/validate-zip.sh
+          ./scripts/pre-build-check.sh
+          mkdir -p build/${{ env.ADDON_NAME }}
+          ./scripts/build-copy.sh . build/${{ env.ADDON_NAME }}
+          cd build && zip -r -q "../${{ steps.addon_name.outputs.ZIP_NAME }}" ${{ env.ADDON_NAME }}
+          ls -la "../${{ steps.addon_name.outputs.ZIP_NAME }}"
+
+      - name: Validate ZIP
+        run: scripts/validate-zip.sh "${{ steps.addon_name.outputs.ZIP_NAME }}"
+
+      - name: ESOUI compliance
+        run: |
+          chmod +x scripts/validate-esoui-compliance.sh
+          mkdir -p dist
+          cp "${{ steps.addon_name.outputs.ZIP_NAME }}" "dist/" || true
+          bash scripts/validate-esoui-compliance.sh
+
+      - name: Extract changelog
+        run: |
+          awk '
+            /^## \['"${{ steps.version.outputs.VERSION }}"'\]/ { found=1; print; next }
+            /^## \[/ { if (found) exit }
+            found { print }
+          ' CHANGELOG.md > release_notes.md
+          if [ ! -s release_notes.md ]; then
+            echo "## v${{ steps.version.outputs.VERSION }}" > release_notes.md
+          fi
+
+      - name: Create GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          name: "${{ env.ADDON_NAME }} v${{ steps.version.outputs.VERSION }}"
+          tag: "v${{ steps.version.outputs.VERSION }}"
+          artifacts: "${{ steps.addon_name.outputs.ZIP_NAME }}"
+          artifactContentType: application/zip
+          bodyFile: release_notes.md
+          allowUpdates: true
+          makeLatest: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload to ESOUI
+        if: ${{ env.ESOUI_ADDON_ID != '0' }}
+        env:
+          ESOUI_API_KEY: ${{ secrets.ESOUI_API_KEY }}
+        run: |
+          chmod +x scripts/esoui-upload.sh
+          scripts/esoui-upload.sh \
+            "$ESOUI_API_KEY" \
+            "${{ env.ESOUI_ADDON_ID }}" \
+            "${{ steps.version.outputs.VERSION }}" \
+            "${{ steps.addon_name.outputs.ZIP_NAME }}" \
+            "${{ env.ESO_API_VERSION }}" \
+            "CHANGELOG.md" \
+            "README_ESOUI.txt"

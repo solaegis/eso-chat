@@ -1,0 +1,48 @@
+# EsoChat - Cursor Rules
+
+## ESO Lua Version Compatibility
+
+**CRITICAL: ESO uses Lua 5.1**
+
+- **NO `goto` statements** — use if/else or early returns
+- No bitwise operators (use bit library if needed)
+- No `__pairs` / `__ipairs` metamethods
+
+Always test in ESO's Lua 5.1 environment.
+
+## Namespace
+
+- Global: `EsoChat`, alias `local EC = EsoChat`
+- Do not pollute the global namespace with helpers
+
+## Error Handling & Logging
+
+- Prefer `EC.SafeCall` for single-return ESO APIs; `EC.SafeCallMulti` or `pcall` for multiple returns
+- Use `EC.Info` / `Warn` / `Error` / `DebugPrint` — not raw `d()` for product messages
+
+## SavedVariables
+
+- `ZO_SavedVars:NewAccountWide(SV_NAME, SV_VERSION, GetWorldName(), defaults)` inside `EVENT_ADD_ON_LOADED`
+- Per-character data under `db.perCharacterData[characterId]`; preserve on reset
+
+## LibAddonMenu
+
+- No emojis or Unicode icons in LAM UI
+- Keep `choices` / `choicesValues` / `tooltips` the same length; never put `nil` in choice arrays
+- Call `EC.AppendSupportFooter(optionsTable)`
+
+## Development Workflow
+
+- After ANY addon code change: run `task install:live`, then `/reloadui` in-game
+- Prefer `install:live` over symlink on Mac
+- New product repo: run `scripts/rename-addon.sh` before shipping
+
+## Versioning
+
+- `## Version:` / `@project-version@` → semver from git tag
+- `## AddOnVersion:` / `@addon-build-version@` → integer YYYYMMDD only (ESO `atoi`)
+
+## File Naming
+
+- New YAML files use `.yaml` suffix
+- PC manifest is `.txt`, never `.addon`

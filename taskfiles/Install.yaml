@@ -1,0 +1,59 @@
+version: "3"
+
+tasks:
+  live:
+    desc: Install addon to ESO Live client (copy with version injection)
+    cmds:
+      - |
+        echo "Installing {{.ADDON_NAME}} to ESO Live..."
+
+        if git rev-parse --git-dir >/dev/null 2>&1; then
+          if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
+            VERSION=$(git describe --tags --exact-match HEAD | sed 's/^v//')
+          elif git describe --tags >/dev/null 2>&1; then
+            VERSION=$(git describe --tags | sed 's/^v//')
+          else
+            VERSION=$(git rev-parse --short HEAD)
+          fi
+        else
+          VERSION="dev"
+        fi
+        echo "   Using version: ${VERSION}"
+
+        mkdir -p "{{.ESO_LIVE_ADDONS}}/{{.ADDON_NAME}}/{{.SRC_DIR}}"
+        cp {{.MANIFEST_FILE}} "{{.ESO_LIVE_ADDONS}}/{{.ADDON_NAME}}/"
+        cp -r {{.SRC_DIR}}/ "{{.ESO_LIVE_ADDONS}}/{{.ADDON_NAME}}/{{.SRC_DIR}}"
+
+        if [ -d textures ]; then
+          mkdir -p "{{.ESO_LIVE_ADDONS}}/{{.ADDON_NAME}}/textures"
+          cp textures/*.dds "{{.ESO_LIVE_ADDONS}}/{{.ADDON_NAME}}/textures/" 2>/dev/null || true
+        fi
+
+        chmod +x scripts/replace-version.sh scripts/set-addon-version.sh
+        ./scripts/replace-version.sh "{{.ESO_LIVE_ADDONS}}/{{.ADDON_NAME}}" "$VERSION"
+        ./scripts/set-addon-version.sh "{{.ESO_LIVE_ADDONS}}/{{.ADDON_NAME}}/{{.MANIFEST_FILE}}"
+
+        echo "Installed to {{.ESO_LIVE_ADDONS}}/{{.ADDON_NAME}}"
+    silent: true
+
+  dev:
+    desc: Symlink repo into live AddOns for development
+    cmds:
+      - bash scripts/install-symlink.sh
+    silent: true
+
+  uninstall:
+    desc: Remove addon from ESO Live AddOns folder
+    cmds:
+      - |
+        TARGET="{{.ESO_LIVE_ADDONS}}/{{.ADDON_NAME}}"
+        if [ -L "$TARGET" ]; then
+          rm "$TARGET"
+          echo "Removed symlink $TARGET"
+        elif [ -d "$TARGET" ]; then
+          rm -rf "$TARGET"
+          echo "Removed directory $TARGET"
+        else
+          echo "Addon not installed at $TARGET"
+        fi
+    silent: true

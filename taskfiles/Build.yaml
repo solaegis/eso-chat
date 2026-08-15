@@ -1,0 +1,100 @@
+version: "3"
+
+tasks:
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - |
+        echo "Cleaning build artifacts..."
+        rm -rf {{.BUILD_DIR}}
+        rm -rf {{.DIST_DIR}}
+        rm -f {{.ADDON_NAME}}-*.zip
+        echo "Clean complete"
+    silent: true
+
+  release:
+    desc: Build release ZIP artifact with full validation
+    deps: [clean]
+    cmds:
+      - task dev:test
+      - |
+        echo "Building {{.ADDON_NAME}} release..."
+
+        chmod +x scripts/pre-build-check.sh
+        ./scripts/pre-build-check.sh
+
+        if git rev-parse --git-dir >/dev/null 2>&1 && git rev-parse HEAD >/dev/null 2>&1; then
+          if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
+            VERSION=$(git describe --tags --exact-match HEAD | sed 's/^v//')
+            echo "   Using tag version: ${VERSION}"
+          else
+            VERSION=$(git rev-parse --short HEAD)
+            echo "   Using commit SHA: ${VERSION}"
+          fi
+        else
+          VERSION="dev"
+          echo "   No git commits — using version: ${VERSION}"
+        fi
+
+        mkdir -p {{.BUILD_DIR}}/{{.ADDON_NAME}}
+        mkdir -p {{.DIST_DIR}}
+
+        chmod +x scripts/build-copy.sh
+        ./scripts/build-copy.sh . {{.BUILD_DIR}}/{{.ADDON_NAME}}
+      - |
+        if git rev-parse --git-dir >/dev/null 2>&1 && git rev-parse HEAD >/dev/null 2>&1; then
+          if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
+            VERSION=$(git describe --tags --exact-match HEAD | sed 's/^v//')
+          else
+            VERSION=$(git rev-parse --short HEAD)
+          fi
+        else
+          VERSION="dev"
+        fi
+
+        chmod +x scripts/replace-version.sh scripts/set-addon-version.sh
+        ./scripts/replace-version.sh "{{.BUILD_DIR}}/{{.ADDON_NAME}}" "$VERSION"
+        ./scripts/set-addon-version.sh "{{.BUILD_DIR}}/{{.ADDON_NAME}}/{{.MANIFEST_FILE}}"
+
+        cd {{.BUILD_DIR}} && zip -r -q "../{{.DIST_DIR}}/{{.ADDON_NAME}}-${VERSION}.zip" {{.ADDON_NAME}}
+        echo "Built: {{.DIST_DIR}}/{{.ADDON_NAME}}-${VERSION}.zip"
+      - |
+        if git rev-parse --git-dir >/dev/null 2>&1 && git rev-parse HEAD >/dev/null 2>&1; then
+          if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
+            VERSION=$(git describe --tags --exact-match HEAD | sed 's/^v//')
+          else
+            VERSION=$(git rev-parse --short HEAD)
+          fi
+        else
+          VERSION="dev"
+        fi
+
+        chmod +x scripts/validate-zip.sh
+        scripts/validate-zip.sh "{{.DIST_DIR}}/{{.ADDON_NAME}}-${VERSION}.zip"
+    silent: true
+
+  fast:
+    desc: Build without tests (fast local iteration)
+    deps: [clean]
+    cmds:
+      - |
+        chmod +x scripts/pre-build-check.sh scripts/build-copy.sh scripts/replace-version.sh scripts/set-addon-version.sh
+        ./scripts/pre-build-check.sh
+
+        if git rev-parse --git-dir >/dev/null 2>&1 && git rev-parse HEAD >/dev/null 2>&1; then
+          if git describe --tags --exact-match HEAD >/dev/null 2>&1; then
+            VERSION=$(git describe --tags --exact-match HEAD | sed 's/^v//')
+          else
+            VERSION=$(git rev-parse --short HEAD)
+          fi
+        else
+          VERSION="dev"
+        fi
+
+        mkdir -p {{.BUILD_DIR}}/{{.ADDON_NAME}} {{.DIST_DIR}}
+        ./scripts/build-copy.sh . {{.BUILD_DIR}}/{{.ADDON_NAME}}
+        ./scripts/replace-version.sh "{{.BUILD_DIR}}/{{.ADDON_NAME}}" "$VERSION"
+        ./scripts/set-addon-version.sh "{{.BUILD_DIR}}/{{.ADDON_NAME}}/{{.MANIFEST_FILE}}"
+        cd {{.BUILD_DIR}} && zip -r -q "../{{.DIST_DIR}}/{{.ADDON_NAME}}-${VERSION}.zip" {{.ADDON_NAME}}
+        echo "Built: {{.DIST_DIR}}/{{.ADDON_NAME}}-${VERSION}.zip"
+    silent: true

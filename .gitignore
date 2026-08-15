@@ -1,0 +1,17 @@
+.DS_Store
+*.zip
+dist/
+build/
+book/
+.task/
+*.log
+
+# Agent / editor state
+.claude/
+.cursor/
+
+# Backup files
+*.backup
+*.bak
+*.swp
+*.swo

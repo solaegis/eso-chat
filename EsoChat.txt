@@ -1,0 +1,19 @@
+## Title: ESO Chat
+## Author: solaegis
+## Version: @project-version@
+## AddOnVersion: @addon-build-version@
+## APIVersion: 101051 101050
+## SavedVariables: EsoChatSettings
+## OptionalDependsOn: LibAddonMenu-2.0 LibDebugLogger
+## Description: solaegis ESO addon scaffold. Use /ech help. Rename with scripts/rename-addon.sh before shipping.
+##
+## This Add-On is not created by, affiliated with or sponsored by ZeniMax Media Inc. or any other company.
+## The Elder Scrolls(R) Online(TM) and related logos are registered trademarks or trademarks of ZeniMax Media Inc. in the United States and/or other countries. All rights reserved.
+
+src/Core.lua
+src/settings/Defaults.lua
+src/settings/Initializer.lua
+src/Commands.lua
+src/settings/SupportFooter.lua
+src/settings/Panel.lua
+src/Init.lua

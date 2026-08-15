@@ -1,0 +1,43 @@
+repos:
+  - repo: https://github.com/JohnnyMorganz/StyLua
+    rev: v2.3.1
+    hooks:
+      - id: stylua
+        args: [--config-path=.stylua.toml]
+        files: \.lua$
+
+  - repo: https://github.com/luarocks/luacheck
+    rev: v1.2.0
+    hooks:
+      - id: luacheck
+        args: [--config=.luacheckrc]
+        files: \.lua$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        files: \.(yaml|yml)$
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: local
+    hooks:
+      - id: validate-manifest
+        name: Validate EsoChat.txt manifest
+        entry: bash -c 'lua scripts/validate-manifest.lua EsoChat.txt || luajit scripts/validate-manifest.lua EsoChat.txt'
+        language: system
+        files: ^EsoChat\.txt$
+        pass_filenames: false
+
+      - id: validate-esoui-static
+        name: ESOUI static compliance (manifest, SVs, listing)
+        entry: bash scripts/validate-esoui-compliance.sh --static
+        language: system
+        pass_filenames: false
+        files: ^(EsoChat\.txt|README_ESOUI\.txt|src/Init\.lua|src/Core\.lua)$
+
+default_install_hook_types: [pre-commit]

@@ -1,0 +1,216 @@
+version: "3"
+
+tasks:
+  install:deps:
+    desc: Show development dependency install instructions
+    cmds:
+      - |
+        echo "EsoChat — development dependencies"
+        echo ""
+        echo "Required:"
+        echo "  brew install go-task stylua luajit"
+        echo "  luarocks install luacheck"
+        echo "  pip install pre-commit   # or: brew install pre-commit"
+        echo ""
+        if ! command -v luacheck >/dev/null 2>&1; then
+          echo "  luacheck not found"
+        else
+          echo "  luacheck OK"
+        fi
+        if ! command -v stylua >/dev/null 2>&1; then
+          echo "  stylua not found"
+        else
+          echo "  stylua OK"
+        fi
+        if ! command -v luajit >/dev/null 2>&1; then
+          echo "  luajit not found"
+        else
+          echo "  luajit OK"
+        fi
+        if ! command -v task >/dev/null 2>&1; then
+          echo "  task not found"
+        else
+          echo "  task OK"
+        fi
+    silent: true
+
+  lint:
+    desc: Run Luacheck on all Lua files
+    cmds:
+      - |
+        echo "Running Luacheck..."
+        if ! command -v luacheck >/dev/null 2>&1; then
+          echo "luacheck not found. Install with: luarocks install luacheck"
+          exit 1
+        fi
+        luacheck {{.SRC_DIR}} --config .luacheckrc
+      - echo "Lint passed"
+    silent: true
+
+  lint:fix:
+    desc: Auto-fix Luacheck issues where possible
+    cmds:
+      - |
+        echo "Auto-fixing Luacheck issues..."
+        luacheck {{.SRC_DIR}} --config .luacheckrc --fix || true
+      - echo "Auto-fix complete"
+    silent: true
+
+  format:
+    desc: Format Lua code with StyLua
+    cmds:
+      - |
+        echo "Formatting Lua code with StyLua..."
+        if ! command -v stylua >/dev/null 2>&1; then
+          echo "StyLua not found. Install with: brew install stylua"
+          exit 1
+        fi
+        stylua --config-path .stylua.toml {{.SRC_DIR}}
+      - echo "Code formatted successfully"
+    silent: true
+
+  format:check:
+    desc: Check Lua formatting without modifying files
+    cmds:
+      - |
+        echo "Checking Lua code formatting..."
+        stylua --config-path .stylua.toml --check {{.SRC_DIR}}
+      - echo "Code formatting is correct"
+    silent: true
+
+  validate:
+    desc: Validate manifest and project structure
+    cmds:
+      - echo "Validating project..."
+      - task: validate:files
+      - task: validate:manifest
+      - task: validate:syntax
+      - echo "All validations passed"
+    silent: true
+
+  validate:files:
+    desc: Check that all required files exist
+    cmds:
+      - echo "  Checking required files..."
+      - |
+        for file in {{.MANIFEST_FILE}} README.md LICENSE CHANGELOG.md; do
+          if [ ! -f "$file" ]; then
+            echo "  Missing required file: $file"
+            exit 1
+          fi
+        done
+        if [ ! -d "{{.SRC_DIR}}" ]; then
+          echo "  Missing required directory: {{.SRC_DIR}}"
+          exit 1
+        fi
+      - echo "    All required files present"
+    silent: true
+
+  validate:manifest:
+    desc: Validate addon manifest file
+    cmds:
+      - echo "  Validating manifest..."
+      - |
+        if command -v lua >/dev/null 2>&1; then
+          lua scripts/validate-manifest.lua {{.MANIFEST_FILE}}
+        elif command -v luajit >/dev/null 2>&1; then
+          luajit scripts/validate-manifest.lua {{.MANIFEST_FILE}}
+        else
+          echo "  lua/luajit not found — running basic grep checks"
+          for field in Title Author Version APIVersion; do
+            if ! grep -q "^## ${field}:" {{.MANIFEST_FILE}}; then
+              echo "  Missing ${field} in manifest"
+              exit 1
+            fi
+          done
+          echo "    Basic manifest valid"
+        fi
+    silent: true
+
+  validate:syntax:
+    desc: Check Lua syntax (loadfile via lua or luajit)
+    cmds:
+      - echo "  Checking Lua syntax..."
+      - |
+        LUA_BIN=""
+        if command -v luajit >/dev/null 2>&1; then
+          LUA_BIN=luajit
+        elif command -v lua >/dev/null 2>&1; then
+          LUA_BIN=lua
+        else
+          echo "  lua/luajit not found — skipping syntax validation"
+          exit 0
+        fi
+        failed=0
+        while IFS= read -r file; do
+          [ -n "$file" ] || continue
+          if ! "$LUA_BIN" -e "assert(loadfile([[$file]]))"; then
+            echo "  Lua syntax errors in $file"
+            failed=1
+          fi
+        done <<EOF
+        $(find {{.SRC_DIR}} -name "*.lua" -type f | sort)
+        EOF
+        if [ "$failed" -ne 0 ]; then
+          exit 1
+        fi
+      - echo "    All Lua files syntax valid"
+    silent: true
+
+  validate:changelog:
+    desc: Validate CHANGELOG.md has version entries
+    cmds:
+      - echo "  Checking CHANGELOG.md..."
+      - |
+        if [ ! -f "CHANGELOG.md" ]; then
+          echo "  CHANGELOG.md not found"
+          exit 1
+        fi
+        if ! grep -q "^## \[.*\]" CHANGELOG.md; then
+          echo "  CHANGELOG.md has no version entries"
+          exit 1
+        fi
+        if grep -q "^## \[Unreleased\]" CHANGELOG.md; then
+          echo "    CHANGELOG.md has [Unreleased] section"
+        fi
+        echo "    CHANGELOG.md is valid"
+    silent: true
+
+  validate:readme:
+    desc: Validate README.md version badges match manifest
+    cmds:
+      - echo "  Checking README.md badges..."
+      - |
+        if [ ! -f "README.md" ]; then
+          echo "  README.md not found"
+          exit 1
+        fi
+        MANIFEST_API=$(grep "^## APIVersion:" {{.MANIFEST_FILE}} | awk '{print $3}')
+        if grep -q "badge/ESO_API-${MANIFEST_API}-" README.md; then
+          echo "    API version badge matches manifest (${MANIFEST_API})"
+        else
+          echo "    API version badge may not match manifest (expected ${MANIFEST_API})"
+        fi
+    silent: true
+
+  validate:esoui:
+    desc: ESOUI packaging + listing + SavedVariables compliance
+    cmds:
+      - |
+        chmod +x scripts/validate-esoui-compliance.sh
+        bash scripts/validate-esoui-compliance.sh
+    silent: true
+
+  validate:all:
+    desc: Run all validation checks
+    deps: [validate, validate:changelog, validate:readme, validate:esoui]
+    cmds:
+      - echo "All validations passed"
+    silent: true
+
+  test:
+    desc: Run all tests (lint + validate)
+    deps: [lint, validate:all]
+    cmds:
+      - echo "All tests passed"
+    silent: true

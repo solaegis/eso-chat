@@ -1,0 +1,97 @@
+version: "3"
+
+vars:
+  ADDON_NAME: EsoChat
+  SRC_DIR: src
+  MANIFEST_FILE: EsoChat.txt
+  BUILD_DIR: build
+  DIST_DIR: dist
+  VERSION: "@project-version@"
+  ESO_LIVE_ADDONS: $HOME/Documents/Elder Scrolls Online/live/AddOns
+  ESO_PTS_ADDONS: $HOME/Documents/Elder Scrolls Online/pts/AddOns
+
+includes:
+  dev:
+    taskfile: ./taskfiles/Dev.yaml
+    internal: false
+  build:
+    taskfile: ./taskfiles/Build.yaml
+    internal: false
+  install:
+    taskfile: ./taskfiles/Install.yaml
+    internal: false
+  release:
+    taskfile: ./taskfiles/Release.yaml
+    internal: false
+
+tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  lint:
+    desc: Alias for dev:lint
+    cmds:
+      - task dev:lint
+    silent: true
+
+  lint:fix:
+    desc: Alias for dev:lint:fix
+    cmds:
+      - task dev:lint:fix
+    silent: true
+
+  format:
+    desc: Alias for dev:format
+    cmds:
+      - task dev:format
+    silent: true
+
+  test:
+    desc: Alias for dev:test
+    cmds:
+      - task dev:test
+    silent: true
+
+  validate:
+    desc: Alias for dev:validate:all
+    cmds:
+      - task dev:validate:all
+    silent: true
+
+  build:
+    desc: Alias for build:release
+    cmds:
+      - task build:release
+    silent: true
+
+  install:
+    desc: Alias for install:live (copy with version injection)
+    cmds:
+      - task install:live
+    silent: true
+
+  version:
+    desc: Alias for release:version:show
+    cmds:
+      - task release:version:show
+    silent: true
+
+  rename:
+    desc: "Rebrand template tokens — Usage: task rename -- --name EsoChat --title \"ESO Chat\" --alias EC --slash ech --repo solaegis/eso-chat"
+    cmds:
+      - chmod +x scripts/rename-addon.sh
+      - ./scripts/rename-addon.sh {{.CLI_ARGS}}
+    silent: true
+
+  init:
+    desc: Initialize development environment
+    cmds:
+      - task dev:install:deps
+      - pre-commit install
+      - task install:dev
+    silent: true
+    status:
+      - test -f .git/hooks/pre-commit

@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    name: Lint and validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: leafo/gh-actions-lua@v13
+        with:
+          luaVersion: "luajit-openresty"
+
+      - uses: leafo/gh-actions-luarocks@v6
+
+      - name: Install tools
+        run: |
+          luarocks install luacheck
+          wget -qO- https://github.com/JohnnyMorganz/StyLua/releases/download/v2.3.1/stylua-linux-x86_64.zip | funzip -p > stylua
+          chmod +x stylua
+          sudo mv stylua /usr/local/bin/
+          curl -sL https://taskfile.dev/install.sh | sh -s -- -d -b /usr/local/bin
+
+      - name: Run tests
+        run: task test
+
+      - name: Build release ZIP
+        run: task build:fast
+
+      - name: ESOUI compliance
+        run: |
+          chmod +x scripts/validate-esoui-compliance.sh scripts/validate-zip.sh
+          bash scripts/validate-esoui-compliance.sh
